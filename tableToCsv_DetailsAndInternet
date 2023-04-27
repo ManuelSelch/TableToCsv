@@ -1,0 +1,65 @@
+import pyautogui
+import time
+
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+
+
+
+#url =          "https://www.der-business-tipp.de/ort/name/id/" 
+detailUrl =     "https://www.der-business-tipp.de/unternehmen/detail/id/"
+internetUrl =   "https://www.der-business-tipp.de/unternehmen/internet/id/"
+
+#16:08
+pageMaxNumber = 5000
+offset = 3
+mydata = None
+
+headers = ["name", "address", "website"]
+mydata = pd.DataFrame(columns = headers)
+
+for num in range(pageMaxNumber):
+    pageUrl = detailUrl + str(num+offset)
+    print("pageUrl: ", pageUrl)
+    page = requests.get(pageUrl)
+    print(page)
+
+    if(page.status_code != 200):
+        continue
+    
+    
+    try:
+        recordInternet = requests.get(internetUrl + str(num+offset)) 
+        internetText = recordInternet.url
+    except:
+        internetText = ""
+    print(internetText)
+
+    soup = BeautifulSoup(page.text, 'lxml')
+
+    nameDiv = soup.find('hgroup', {"id": "main-head"})
+
+    if(nameDiv == None):
+        continue
+
+    name = nameDiv.text.strip() 
+    print(name)
+
+    addressDiv = soup.find_all('div', {"class": "address"})[0]
+    addressText = addressDiv.find("strong").text
+    print(addressText)
+
+    row = [name, addressText, internetText]
+
+    length = len(mydata)
+    mydata.loc[length] = row
+   
+
+    
+    
+    mydata.to_csv('test_contacts_data.csv', index=False) #change name of file
+
+
+#export
+mydata.to_csv('contacts_data.csv', index=False) #change name of file
